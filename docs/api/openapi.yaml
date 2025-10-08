@@ -1,0 +1,1606 @@
+openapi: 3.0.3
+info:
+  title: SecurityGuard Pro API
+  description: |
+    Comprehensive API documentation for SecurityGuard Pro - A security guard management system with real-time monitoring, geofencing, attendance tracking, and billing capabilities.
+    
+    ## Features
+    - **Guard Management**: Create, update, and manage security guards
+    - **Real-time Location Tracking**: GPS-based location monitoring with geofencing
+    - **Attendance System**: Automated attendance tracking with facial recognition
+    - **Geofencing**: Create and monitor virtual boundaries
+    - **Alert Management**: Real-time alerts and notifications
+    - **Billing & Subscriptions**: Integrated payment processing with Stripe
+    - **Multi-tenancy**: Support for multiple organizations
+    - **Mobile Support**: Offline data synchronization for mobile apps
+    
+    ## Authentication
+    All API endpoints require authentication using JWT tokens obtained through the authentication endpoints.
+    
+    ## Rate Limiting
+    API requests are rate-limited to 100 requests per 15-minute window per IP address.
+    
+    ## Base URL
+    - Production: `https://api.securityguardpro.com/v1`
+    - Development: `http://localhost:3000/api`
+  version: 1.0.0
+  contact:
+    name: SecurityGuard Pro API Support
+    email: api-support@securityguardpro.com
+    url: https://securityguardpro.com/docs
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.securityguardpro.com/v1
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, MANAGER, GUARD, CLIENT]
+        tenantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Guard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        employeeId:
+          type: string
+        licenseNumber:
+          type: string
+        licenseExpiry:
+          type: string
+          format: date
+        photo:
+          type: string
+          format: uri
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, ON_LEAVE, SUSPENDED]
+        tenantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Location:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        guardId:
+          type: string
+          format: uuid
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        accuracy:
+          type: number
+          format: double
+        timestamp:
+          type: string
+          format: date-time
+        batteryLevel:
+          type: number
+          format: float
+        isCharging:
+          type: boolean
+        speed:
+          type: number
+          format: double
+        heading:
+          type: number
+          format: double
+    
+    Geofence:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        radius:
+          type: number
+          format: double
+        type:
+          type: string
+          enum: [CIRCLE, POLYGON]
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              format: double
+        isActive:
+          type: boolean
+        tenantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [GEOFENCE_BREACH, EMERGENCY, LOW_BATTERY, DEVICE_OFFLINE, SCHEDULE_BREACH, UNAUTHORIZED_ACCESS]
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        status:
+          type: string
+          enum: [ACTIVE, RESOLVED, DISMISSED]
+        guardId:
+          type: string
+          format: uuid
+        locationId:
+          type: string
+          format: uuid
+        geofenceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+        guard:
+          $ref: '#/components/schemas/Guard'
+        location:
+          $ref: '#/components/schemas/Location'
+        geofence:
+          $ref: '#/components/schemas/Geofence'
+    
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        guardId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [CHECK_IN, CHECK_OUT]
+        timestamp:
+          type: string
+          format: date-time
+        location:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+        method:
+          type: string
+          enum: [GPS, FACIAL_RECOGNITION, QR_CODE, MANUAL]
+        verificationScore:
+          type: number
+          format: float
+        photo:
+          type: string
+          format: uri
+        notes:
+          type: string
+        tenantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    
+    Leave:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        guardId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [VACATION, SICK, PERSONAL, EMERGENCY]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, CANCELLED]
+        approvedBy:
+          type: string
+          format: uuid
+        approvedAt:
+          type: string
+          format: date-time
+        rejectionReason:
+          type: string
+        tenantId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        domain:
+          type: string
+        settings:
+          type: object
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        plan:
+          type: string
+          enum: [BASIC, PROFESSIONAL, ENTERPRISE]
+        status:
+          type: string
+          enum: [ACTIVE, CANCELLED, EXPIRED, PENDING]
+        stripeSubscriptionId:
+          type: string
+        currentPeriodStart:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        trialEnd:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [CONTRACT, CERTIFICATE, TRAINING, POLICY, OTHER]
+        fileUrl:
+          type: string
+          format: uri
+        fileSize:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        guardId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        expiryDate:
+          type: string
+          format: date
+        isExpiringSoon:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ALERT, REMINDER, SYSTEM, BILLING]
+        title:
+          type: string
+        message:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        isRead:
+          type: boolean
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+    
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: integer
+          format: int64
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthCheck'
+    
+    HealthCheck:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        latency:
+          type: integer
+          format: int64
+        details:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    
+    MetricData:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+        tags:
+          type: object
+
+paths:
+  # Health Check Endpoints
+  /health:
+    get:
+      tags:
+        - Monitoring
+      summary: System Health Check
+      description: Returns the current health status of the system
+      parameters:
+        - name: detailed
+          in: query
+          description: Return detailed health information
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+  
+  # Metrics Endpoints
+  /metrics:
+    get:
+      tags:
+        - Monitoring
+      summary: Get System Metrics
+      description: Retrieve system performance metrics
+      parameters:
+        - name: name
+          in: query
+          description: Specific metric name
+          required: false
+          schema:
+            type: string
+        - name: timeRange
+          in: query
+          description: Time range for metrics (e.g., 1h, 24h, 7d)
+          required: false
+          schema:
+            type: string
+            default: 1h
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      available_metrics:
+                        type: array
+                        items:
+                          type: string
+                      system_metrics:
+                        type: object
+                      timestamp:
+                        type: string
+                        format: date-time
+                  - type: object
+                    properties:
+                      name:
+                        type: string
+                      timeRange:
+                        type: string
+                      history:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MetricData'
+                      aggregated:
+                        type: object
+                      count:
+                        type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+  
+  # Monitoring Alerts Endpoints
+  /monitoring/alerts:
+    get:
+      tags:
+        - Monitoring
+      summary: Get Monitoring Alerts
+      description: Retrieve system monitoring alerts
+      parameters:
+        - name: activeOnly
+          in: query
+          description: Return only active alerts
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  count:
+                    type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    patch:
+      tags:
+        - Monitoring
+      summary: Update Monitoring Alert
+      description: Resolve or update monitoring alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - alertId
+                - action
+              properties:
+                alertId:
+                  type: string
+                  format: uuid
+                action:
+                  type: string
+                  enum: [resolve]
+      responses:
+        '200':
+          description: Alert updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  alertId:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Authentication Endpoints
+  /auth/[...nextauth]:
+    get:
+      tags:
+        - Authentication
+      summary: NextAuth.js Authentication
+      description: Handles authentication callbacks and sessions
+      parameters:
+        - name: nextauth
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to authentication provider or callback
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+    
+    post:
+      tags:
+        - Authentication
+      summary: NextAuth.js Authentication
+      description: Handles authentication callbacks and sessions
+      parameters:
+        - name: nextauth
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to authentication provider or callback
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+  
+  # Guards Endpoints
+  /guards:
+    get:
+      tags:
+        - Guards
+      summary: Get Guards
+      description: Retrieve a list of guards with optional filtering
+      parameters:
+        - name: status
+          in: query
+          description: Filter by guard status
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, ON_LEAVE, SUSPENDED]
+        - name: search
+          in: query
+          description: Search guards by name or email
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Guards retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Guard'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Guards
+      summary: Create Guard
+      description: Create a new guard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - phone
+                - employeeId
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                employeeId:
+                  type: string
+                licenseNumber:
+                  type: string
+                licenseExpiry:
+                  type: string
+                  format: date
+                photo:
+                  type: string
+                  format: uri
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE, ON_LEAVE, SUSPENDED]
+                  default: ACTIVE
+      responses:
+        '201':
+          description: Guard created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Guard'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Alerts Endpoints
+  /alerts:
+    get:
+      tags:
+        - Alerts
+      summary: Get Alerts
+      description: Retrieve a list of alerts with optional filtering
+      parameters:
+        - name: severity
+          in: query
+          description: Filter by alert severity
+          required: false
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        - name: status
+          in: query
+          description: Filter by alert status
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, RESOLVED, DISMISSED]
+      responses:
+        '200':
+          description: Alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Alerts
+      summary: Create Alert
+      description: Create a new alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - message
+                - severity
+              properties:
+                type:
+                  type: string
+                  enum: [GEOFENCE_BREACH, EMERGENCY, LOW_BATTERY, DEVICE_OFFLINE, SCHEDULE_BREACH, UNAUTHORIZED_ACCESS]
+                message:
+                  type: string
+                severity:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH, CRITICAL]
+                guardId:
+                  type: string
+                  format: uuid
+                locationId:
+                  type: string
+                  format: uuid
+                geofenceId:
+                  type: string
+                  format: uuid
+                userId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    patch:
+      tags:
+        - Alerts
+      summary: Update Alert
+      description: Update alert status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - status
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [ACTIVE, RESOLVED, DISMISSED]
+      responses:
+        '200':
+          description: Alert updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Geofences Endpoints
+  /geofences:
+    get:
+      tags:
+        - Geofences
+      summary: Get Geofences
+      description: Retrieve a list of geofences
+      responses:
+        '200':
+          description: Geofences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Geofence'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Geofences
+      summary: Create Geofence
+      description: Create a new geofence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - latitude
+                - longitude
+                - radius
+                - type
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                latitude:
+                  type: number
+                  format: double
+                longitude:
+                  type: number
+                  format: double
+                radius:
+                  type: number
+                  format: double
+                type:
+                  type: string
+                  enum: [CIRCLE, POLYGON]
+                coordinates:
+                  type: array
+                  items:
+                    type: array
+                    items:
+                      type: number
+                      format: double
+                isActive:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Geofence created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Geofence'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Attendance Endpoints
+  /attendance:
+    get:
+      tags:
+        - Attendance
+      summary: Get Attendance Records
+      description: Retrieve attendance records
+      parameters:
+        - name: guardId
+          in: query
+          description: Filter by guard ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          description: Start date for filtering
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: End date for filtering
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          description: Filter by attendance type
+          required: false
+          schema:
+            type: string
+            enum: [CHECK_IN, CHECK_OUT]
+      responses:
+        '200':
+          description: Attendance records retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attendance'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Attendance
+      summary: Create Attendance Record
+      description: Create a new attendance record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guardId
+                - type
+                - timestamp
+                - location
+                - method
+              properties:
+                guardId:
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                  enum: [CHECK_IN, CHECK_OUT]
+                timestamp:
+                  type: string
+                  format: date-time
+                location:
+                  type: object
+                  properties:
+                    latitude:
+                      type: number
+                      format: double
+                    longitude:
+                      type: number
+                      format: double
+                method:
+                  type: string
+                  enum: [GPS, FACIAL_RECOGNITION, QR_CODE, MANUAL]
+                verificationScore:
+                  type: number
+                  format: float
+                photo:
+                  type: string
+                  format: uri
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Attendance record created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attendance'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Billing Endpoints
+  /billing/subscription:
+    get:
+      tags:
+        - Billing
+      summary: Get Subscription
+      description: Retrieve current subscription information
+      responses:
+        '200':
+          description: Subscription retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /billing/plans:
+    get:
+      tags:
+        - Billing
+      summary: Get Available Plans
+      description: Retrieve available subscription plans
+      responses:
+        '200':
+          description: Plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    price:
+                      type: number
+                    features:
+                      type: array
+                      items:
+                        type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /billing/checkout:
+    post:
+      tags:
+        - Billing
+      summary: Create Checkout Session
+      description: Create a Stripe checkout session for subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - planId
+              properties:
+                planId:
+                  type: string
+                successUrl:
+                  type: string
+                  format: uri
+                cancelUrl:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Documents Endpoints
+  /documents:
+    get:
+      tags:
+        - Documents
+      summary: Get Documents
+      description: Retrieve a list of documents
+      parameters:
+        - name: guardId
+          in: query
+          description: Filter by guard ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          description: Filter by document type
+          required: false
+          schema:
+            type: string
+            enum: [CONTRACT, CERTIFICATE, TRAINING, POLICY, OTHER]
+        - name: expiringSoon
+          in: query
+          description: Filter documents expiring soon
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Notifications Endpoints
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get Notifications
+      description: Retrieve user notifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          description: Filter unread notifications only
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: type
+          in: query
+          description: Filter by notification type
+          required: false
+          schema:
+            type: string
+            enum: [ALERT, REMINDER, SYSTEM, BILLING]
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    patch:
+      tags:
+        - Notifications
+      summary: Mark Notifications as Read
+      description: Mark notifications as read
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - notificationIds
+              properties:
+                notificationIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Notifications marked as read successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  updatedCount:
+                    type: integer
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  # Tenants Endpoints
+  /tenants:
+    get:
+      tags:
+        - Tenants
+      summary: Get Tenants
+      description: Retrieve a list of tenants (admin only)
+      responses:
+        '200':
+          description: Tenants retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tenant'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    post:
+      tags:
+        - Tenants
+      summary: Create Tenant
+      description: Create a new tenant (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - domain
+              properties:
+                name:
+                  type: string
+                domain:
+                  type: string
+                settings:
+                  type: object
+      responses:
+        '201':
+          description: Tenant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Monitoring
+    description: System monitoring and health check endpoints
+  - name: Authentication
+    description: User authentication and session management
+  - name: Guards
+    description: Security guard management
+  - name: Alerts
+    description: Alert management and notifications
+  - name: Geofences
+    description: Geofence management and monitoring
+  - name: Attendance
+    description: Attendance tracking and management
+  - name: Billing
+    description: Subscription and billing management
+  - name: Documents
+    description: Document management and storage
+  - name: Notifications
+    description: User notifications and alerts
+  - name: Tenants
+    description: Multi-tenant organization management
