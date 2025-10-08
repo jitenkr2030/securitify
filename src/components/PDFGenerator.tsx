@@ -408,7 +408,7 @@ startxref
               Add Chart
             </Button>
             <Button variant="outline" onClick={() => addSection('image')}>
-              <Image className="w-4 h-4 mr-2" />
+              <Image className="w-4 h-4 mr-2" alt="Add image" />
               Add Image
             </Button>
             <Button variant="outline" onClick={() => addSection('list')}>
@@ -427,7 +427,7 @@ startxref
                       {section.type === 'text' && <FileText className="w-4 h-4 mr-2" />}
                       {section.type === 'table' && <Table className="w-4 h-4 mr-2" />}
                       {section.type === 'chart' && <BarChart3 className="w-4 h-4 mr-2" />}
-                      {section.type === 'image' && <Image className="w-4 h-4 mr-2" />}
+                      {section.type === 'image' && <Image className="w-4 h-4 mr-2" alt="Image section" />}
                       {section.type === 'list' && <List className="w-4 h-4 mr-2" />}
                       {section.title}
                     </CardTitle>

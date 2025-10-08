@@ -131,7 +131,7 @@ export function applyRateLimit(request: NextRequest) {
   // Add rate limit headers to successful responses
   const response = NextResponse.next();
   response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
-  response.headers.set('X-RateLimit-Limit', result.limit.toString());
+  response.headers.set('X-RateLimit-Limit', (result.limit || 100).toString());
   response.headers.set('X-RateLimit-Reset', result.resetTime.toString());
   response.headers.set('X-RateLimit-Production-Ready', result.isProductionReady.toString());
   
