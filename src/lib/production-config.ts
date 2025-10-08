@@ -70,7 +70,8 @@ export const productionConfig: ProductionConfig = {
   },
   security: {
     cors: {
-      origins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+      // Allow multiple origins for production
+      origins: process.env.CORS_ORIGINS?.split(',').map(origin => origin.trim()) || ['http://localhost:3000'],
       credentials: true,
     },
     rateLimit: {
@@ -78,8 +79,13 @@ export const productionConfig: ProductionConfig = {
       max: parseInt(process.env.RATE_LIMIT_MAX || '100'), // limit each IP to 100 requests per windowMs
     },
     headers: {
-      csp: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: https:;",
-      permissionsPolicy: 'camera=(), microphone=(), geolocation=()',
+      // More permissive CSP for production
+      csp: process.env.NODE_ENV === 'production' 
+        ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: *; font-src 'self' data: https:; connect-src 'self' wss: https: https://api.stripe.com;"
+        : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: https:;",
+      permissionsPolicy: process.env.NODE_ENV === 'production'
+        ? 'camera=(), microphone=(), geolocation=()'
+        : 'camera=*, microphone=*, geolocation=*',
     },
   },
   database: {

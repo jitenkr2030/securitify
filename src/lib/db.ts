@@ -4,11 +4,25 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Create Prisma client with production-ready configuration
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ['query'],
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    errorFormat: 'minimal',
   })
+
+// Configure connection pool for production
+if (process.env.NODE_ENV === 'production') {
+  // Use connection pooling for better performance
+  const poolMin = parseInt(process.env.DB_POOL_MIN || '2')
+  const poolMax = parseInt(process.env.DB_POOL_MAX || '10')
+  
+  // This would be configured in the DATABASE_URL for production
+  // Example: file:./dev.db?connection_limit=10
+}
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 
 // Tenant-aware database context
 export class TenantDB {
