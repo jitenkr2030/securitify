@@ -408,6 +408,7 @@ startxref
               Add Chart
             </Button>
             <Button variant="outline" onClick={() => addSection('image')}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
               <Image className="w-4 h-4 mr-2" />
               Add Image
             </Button>
@@ -427,6 +428,7 @@ startxref
                       {section.type === 'text' && <FileText className="w-4 h-4 mr-2" />}
                       {section.type === 'table' && <Table className="w-4 h-4 mr-2" />}
                       {section.type === 'chart' && <BarChart3 className="w-4 h-4 mr-2" />}
+                      {/* eslint-disable-next-line jsx-a11y/alt-text */}
                       {section.type === 'image' && <Image className="w-4 h-4 mr-2" />}
                       {section.type === 'list' && <List className="w-4 h-4 mr-2" />}
                       {section.title}
