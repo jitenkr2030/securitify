@@ -233,6 +233,7 @@ export default function SecuritifyDashboard() {
 
   // Show loading state while session is loading
   if (status === "loading") {
+    console.log('📊 Dashboard: Session loading...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -242,6 +243,7 @@ export default function SecuritifyDashboard() {
 
   // Redirect to sign in if not authenticated
   if (!session) {
+    console.log('📊 Dashboard: No session found, redirecting to sign in');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -258,6 +260,8 @@ export default function SecuritifyDashboard() {
       </div>
     );
   }
+
+  console.log('📊 Dashboard: Session found for user:', session.user?.email, 'Role:', session.user?.role);
 
   const filteredGuards = guards.filter(guard => {
     const matchesSearch = guard.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -7,7 +7,7 @@ const createTenantSchema = z.object({
   name: z.string().min(1, 'Tenant name is required'),
   domain: z.string().optional(),
   subdomain: z.string().optional(),
-  plan: z.enum(['basic', 'professional', 'enterprise']).optional(),
+  plan: z.enum(['free', 'basic', 'professional', 'enterprise']).optional(),
   adminUser: z.object({
     email: z.string().email('Invalid email address'),
     name: z.string().min(1, 'Admin name is required'),

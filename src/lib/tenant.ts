@@ -6,7 +6,7 @@ export interface Tenant {
   domain?: string;
   subdomain?: string;
   status: 'active' | 'suspended' | 'cancelled';
-  plan: 'basic' | 'professional' | 'enterprise';
+  plan: 'free' | 'basic' | 'professional' | 'enterprise';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,7 +21,7 @@ export interface TenantSetting {
 
 export interface Subscription {
   id: string;
-  plan: 'basic' | 'professional' | 'enterprise';
+  plan: 'free' | 'basic' | 'professional' | 'enterprise';
   status: 'active' | 'cancelled' | 'expired';
   startDate: Date;
   endDate?: Date;
@@ -41,6 +41,15 @@ export interface SubscriptionPlan {
 }
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    features: ['Up to 3 guards', 'Basic tracking', 'Email support'],
+    guardLimit: 3,
+    postLimit: 1,
+    apiCallsLimit: 100
+  },
   {
     id: 'basic',
     name: 'Basic',
@@ -75,7 +84,7 @@ export class TenantService {
     name: string;
     domain?: string;
     subdomain?: string;
-    plan?: 'basic' | 'professional' | 'enterprise';
+    plan?: 'free' | 'basic' | 'professional' | 'enterprise';
   }): Promise<Tenant> {
     const tenant = await db.tenant.create({
       data: {
@@ -120,7 +129,7 @@ export class TenantService {
       domain: tenant.domain ?? undefined,
       subdomain: tenant.subdomain ?? undefined,
       status: tenant.status as 'active' | 'suspended' | 'cancelled',
-      plan: tenant.plan as 'basic' | 'professional' | 'enterprise',
+      plan: tenant.plan as 'free' | 'basic' | 'professional' | 'enterprise',
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt
     };
@@ -152,7 +161,7 @@ export class TenantService {
       domain: tenant.domain ?? undefined,
       subdomain: tenant.subdomain ?? undefined,
       status: tenant.status as 'active' | 'suspended' | 'cancelled',
-      plan: tenant.plan as 'basic' | 'professional' | 'enterprise',
+      plan: tenant.plan as 'free' | 'basic' | 'professional' | 'enterprise',
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt
     };
@@ -189,7 +198,7 @@ export class TenantService {
       domain: tenant.domain ?? undefined,
       subdomain: tenant.subdomain ?? undefined,
       status: tenant.status as 'active' | 'suspended' | 'cancelled',
-      plan: tenant.plan as 'basic' | 'professional' | 'enterprise',
+      plan: tenant.plan as 'free' | 'basic' | 'professional' | 'enterprise',
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt
     };
@@ -210,7 +219,7 @@ export class TenantService {
       domain: tenant.domain ?? undefined,
       subdomain: tenant.subdomain ?? undefined,
       status: tenant.status as 'active' | 'suspended' | 'cancelled',
-      plan: tenant.plan as 'basic' | 'professional' | 'enterprise',
+      plan: tenant.plan as 'free' | 'basic' | 'professional' | 'enterprise',
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt
     };
@@ -255,7 +264,7 @@ export class TenantService {
     // Convert types to match interface
     const result: Subscription = {
       id: subscription.id,
-      plan: subscription.plan as 'basic' | 'professional' | 'enterprise',
+      plan: subscription.plan as 'free' | 'basic' | 'professional' | 'enterprise',
       status: subscription.status as 'active' | 'cancelled' | 'expired',
       startDate: subscription.startDate,
       endDate: subscription.endDate ?? undefined,
