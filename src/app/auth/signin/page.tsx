@@ -31,19 +31,28 @@ export default function SignIn() {
       });
 
       if (result?.error) {
+        console.log('❌ Sign in error:', result.error);
         setError("Invalid email or password");
       } else {
-        // Get user session to determine role-based redirect
-        const session = await getSession();
-        if (session?.user?.role === "admin") {
-          router.push("/dashboard");
-        } else if (session?.user?.role === "guard") {
-          router.push("/mobile");
-        } else if (session?.user?.role === "field_officer") {
-          router.push("/dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+        console.log('✅ Sign in successful, getting session...');
+        // Add a small delay to ensure session is properly established
+        setTimeout(async () => {
+          const session = await getSession();
+          console.log('🔍 Session after sign in:', session);
+          if (session?.user?.role === "admin") {
+            console.log('🔄 Redirecting admin to dashboard');
+            router.push("/dashboard");
+          } else if (session?.user?.role === "guard") {
+            console.log('🔄 Redirecting guard to mobile');
+            router.push("/mobile");
+          } else if (session?.user?.role === "field_officer") {
+            console.log('🔄 Redirecting field officer to dashboard');
+            router.push("/dashboard");
+          } else {
+            console.log('🔄 Redirecting to default dashboard');
+            router.push("/dashboard");
+          }
+        }, 500);
       }
     } catch (error) {
       setError("An error occurred. Please try again.");

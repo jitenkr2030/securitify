@@ -57,9 +57,9 @@ export default withAuth(
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/api/:path*",
     "/guards/:path*",
     "/reports/:path*",
-    // Remove "/mobile/:path*" from middleware to allow guard access without redirect loop
+    // Exclude API routes that don't need authentication
+    "/((?!api/auth|auth/signin|auth/error|_next/static|_next/image|favicon.ico).*)",
   ],
 };
