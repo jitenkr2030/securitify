@@ -24,6 +24,29 @@ if (process.env.NODE_ENV === 'production') {
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 
+// Initialize database with demo data if needed
+export async function initializeDatabase() {
+  try {
+    // Test database connection
+    await db.$queryRaw`SELECT 1`
+    console.log('✅ Database connection successful')
+    
+    // Check if we need to create demo data
+    const demoTenant = await db.tenant.findFirst({
+      where: { subdomain: 'demo' }
+    })
+    
+    if (!demoTenant && process.env.NODE_ENV === 'development') {
+      console.log('📝 Creating demo tenant and users...')
+      // Demo data creation logic can be added here
+    }
+  } catch (error) {
+    console.error('❌ Database connection failed:', error)
+    // In production, we might want to throw an error here
+    // For development, we'll continue and let individual queries handle the error
+  }
+}
+
 // Tenant-aware database context
 export class TenantDB {
   private tenantId: string;

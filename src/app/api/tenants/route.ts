@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TenantService } from '@/lib/tenant';
 import { emailService } from '@/lib/email/service';
 import { z } from 'zod';
+import { initializeDatabase } from '@/lib/db';
 
 const createTenantSchema = z.object({
   name: z.string().min(1, 'Tenant name is required'),
@@ -17,6 +18,9 @@ const createTenantSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize database connection
+    await initializeDatabase();
+    
     const body = await request.json();
     const validatedData = createTenantSchema.parse(body);
 
@@ -89,6 +93,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.issues },
         { status: 400 }
+      );
+    }
+
+    // Handle database connection errors specifically
+    if (error instanceof Error && error.message.includes('DATABASE_URL')) {
+      return NextResponse.json(
+        { error: 'Database configuration error. Please contact support.' },
+        { status: 500 }
       );
     }
 
