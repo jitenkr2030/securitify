@@ -1,0 +1,975 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id              String   @id @default(cuid())
+  name            String
+  domain          String?  @unique
+  subdomain       String?  @unique
+  status          String   @default("active") // "active", "suspended", "cancelled"
+  plan            String   @default("basic") // "basic", "professional", "enterprise"
+  stripeCustomerId String?  @unique
+  stripeSubscriptionId String?
+  country         String   @default("US") // Country code for localization
+  currency        String   @default("USD") // Default currency for tenant
+  timezone        String   @default("UTC") // Default timezone
+  language        String   @default("en") // Default language
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  users           User[]
+  settings        TenantSetting[]
+  subscriptions   Subscription[]
+  geofences       Geofence[]
+  geofenceAlerts  GeofenceAlert[]
+  roles           Role[]
+  auditLogs       AuditLog[]
+  systemSettings  SystemSetting[]
+  reports         Report[]
+  psaraLicenses   PSARALicense[]
+  psaraTrainings  PSARATraining[]
+  psaraClientAgreements PSARAClientAgreement[]
+  psaraComplianceReports PSARAComplianceReport[]
+  countryContents CountryContent[]
+  
+  @@unique([domain, subdomain])
+}
+
+model TenantSetting {
+  id          String   @id @default(cuid())
+  key         String
+  value       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([tenantId, key])
+}
+
+model Subscription {
+  id                  String   @id @default(cuid())
+  stripeSubscriptionId String?  @unique
+  stripePriceId       String?
+  plan                String
+  status              String   @default("active") // "active", "cancelled", "expired", "past_due"
+  startDate           DateTime
+  endDate             DateTime?
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  amount              Float
+  currency            String   @default("usd")
+  interval            String   @default("month") // "month", "year"
+  cancelAtPeriodEnd   Boolean  @default(false)
+  trialEnd            DateTime?
+  metadata            String?  // JSON string for additional metadata
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Relations
+  tenantId            String
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String
+  name      String?
+  password  String?
+  role      String   @default("user") // "admin", "field_officer", "guard", "super_admin"
+  status    String   @default("active") // "active", "inactive", "suspended"
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  guards    Guard[]
+  posts     Post[]
+  shifts    Shift[]
+  attendances Attendance[]
+  leaves    Leave[]
+  approvedLeaves Leave[] @relation("ApprovedLeave")
+  salaries  Salary[]
+  documents Document[]
+  locations Location[]
+  alerts    Alert[]
+  notifications Notification[]
+  incidents Incident[]
+  sentMessages Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
+  announcements Announcement[]
+  healthRecords HealthRecord[]
+  safetyChecks SafetyCheck[]
+  auditLogs  AuditLog[]
+  userRoles  UserRole[]
+  userPermissions UserPermission[]
+  reports   Report[]
+  
+  @@unique([email, tenantId])
+}
+
+model Guard {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  photo     String?
+  status    String   @default("active") // "active", "inactive", "on_leave"
+  salary    Float
+  hourlyRate Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  posts     Post[]
+  shifts    Shift[]
+  attendances Attendance[]
+  leaves    Leave[]
+  salaries  Salary[]
+  documents Document[]
+  locations Location[]
+  alerts    Alert[]
+  notifications Notification[]
+  geofenceAlerts GeofenceAlert[]
+  incidents Incident[]
+  sentMessages Message[] @relation("GuardSender")
+  receivedMessages Message[] @relation("GuardReceiver")
+  announcementReads AnnouncementRead[]
+  healthRecords HealthRecord[]
+  safetyChecks SafetyCheck[]
+  wellnessChecks WellnessCheck[]
+  psaraTrainingRecords PSARATrainingRecord[]
+  psaraDutyRegisters PSARADutyRegister[]
+  psaraWageRegisters PSARAWageRegister[]
+  
+  @@unique([phone, userId])
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String?
+  guard       Guard?   @relation(fields: [guardId], references: [id])
+  
+  shifts      Shift[]
+  geofences   Geofence[]
+  safetyChecks SafetyCheck[]
+  psaraDutyRegisters PSARADutyRegister[]
+  
+  @@unique([name, userId])
+}
+
+model Shift {
+  id          String   @id @default(cuid())
+  name        String
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("scheduled") // "scheduled", "in_progress", "completed", "cancelled"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id])
+  
+  attendances Attendance[]
+  safetyChecks SafetyCheck[]
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  checkInTime DateTime?
+  checkOutTime DateTime?
+  checkInLat  Float?
+  checkInLng  Float?
+  checkOutLat Float?
+  checkOutLng Float?
+  status      String   @default("pending") // "pending", "present", "absent", "late"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  shiftId     String
+  shift       Shift    @relation(fields: [shiftId], references: [id])
+}
+
+model Leave {
+  id              String   @id @default(cuid())
+  startDate       DateTime
+  endDate         DateTime
+  reason          String
+  status          String   @default("pending") // "pending", "approved", "rejected"
+  leaveType       String   @default("casual") // "casual", "sick", "emergency", "vacation"
+  days            Int      @default(1)
+  rejectionReason String?
+  attachment      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  guardId         String
+  guard           Guard    @relation(fields: [guardId], references: [id])
+  
+  approvedById    String?
+  approvedBy      User?    @relation("ApprovedLeave", fields: [approvedById], references: [id])
+}
+
+model Salary {
+  id          String   @id @default(cuid())
+  month       String   // "2024-01"
+  year        Int
+  baseSalary  Float
+  overtime    Float    @default(0)
+  deductions  Float    @default(0)
+  netSalary   Float
+  status      String   @default("pending") // "pending", "processed", "paid"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  type        String   // "aadhaar", "police_verification", "training_certificate", "license", "other"
+  name        String
+  fileUrl     String
+  status      String   @default("pending") // "pending", "verified", "rejected"
+  expiryDate  DateTime?
+  rejectionReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  latitude    Float
+  longitude   Float
+  timestamp   DateTime @default(now())
+  speed       Float?
+  direction   Float?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  alerts      Alert[]
+}
+
+model Geofence {
+  id          String   @id @default(cuid())
+  name        String
+  latitude    Float
+  longitude   Float
+  radius      Float    // in meters
+  isActive    Boolean  @default(true)
+  alertTypes  String   // JSON array: ["entry", "exit", "loitering"]
+  schedule    String   // JSON object with schedule settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id])
+  
+  alerts      Alert[]
+  geofenceAlerts GeofenceAlert[]
+  
+  // Add tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  type        String   // "geofence_breach", "sos", "intrusion", "late_arrival", "early_departure"
+  message     String
+  severity    String   @default("medium") // "low", "medium", "high", "critical"
+  status      String   @default("active") // "active", "resolved", "dismissed"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id])
+  
+  geofenceId  String?
+  geofence    Geofence? @relation(fields: [geofenceId], references: [id])
+}
+
+model GeofenceAlert {
+  id          String   @id @default(cuid())
+  type        String   // "entry", "exit", "loitering"
+  message     String
+  severity    String   @default("medium") // "low", "medium", "high", "critical"
+  latitude    Float
+  longitude   Float
+  isResolved  Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  geofenceId  String
+  geofence    Geofence @relation(fields: [geofenceId], references: [id])
+  
+  // Add tenant relationship
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  type        String   // "alert", "reminder", "system", "attendance", "payroll", "incident"
+  priority    String   @default("medium") // "low", "medium", "high", "critical"
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  
+  guardId     String?
+  guard       Guard?    @relation(fields: [guardId], references: [id])
+  
+  incidentId  String?
+  incident    Incident? @relation(fields: [incidentId], references: [id])
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // "security_breach", "theft", "vandalism", "assault", "medical_emergency", "fire", "other"
+  severity    String   @default("medium") // "low", "medium", "high", "critical"
+  status      String   @default("reported") // "reported", "investigating", "resolved", "closed"
+  location    String?
+  latitude    Float?
+  longitude   Float?
+  occurredAt  DateTime @default(now())
+  reportedAt  DateTime @default(now())
+  resolvedAt  DateTime?
+  resolution  String?
+  actionTaken String?
+  witnesses   String?  // JSON array of witness information
+  evidence    String?  // JSON array of evidence (photos, videos, documents)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  incidentReports IncidentReport[]
+  notifications  Notification[]
+}
+
+model IncidentReport {
+  id          String   @id @default(cuid())
+  reportType  String   // "initial", "follow_up", "final"
+  content     String
+  attachments String?  // JSON array of file URLs
+  reportedBy  String   // Name of the person reporting
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  incidentId  String
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  content     String
+  type        String   // "text", "image", "document", "location"
+  status      String   @default("sent") // "sent", "delivered", "read"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  senderId    String
+  sender      User     @relation("Sender", fields: [senderId], references: [id])
+  
+  receiverId  String
+  receiver    User     @relation("Receiver", fields: [receiverId], references: [id])
+  
+  guardSenderId String?
+  guardSender   Guard?   @relation("GuardSender", fields: [guardSenderId], references: [id])
+  
+  guardReceiverId String?
+  guardReceiver   Guard? @relation("GuardReceiver", fields: [guardReceiverId], references: [id])
+  
+  attachments MessageAttachment[]
+}
+
+model MessageAttachment {
+  id          String   @id @default(cuid())
+  filename    String
+  fileUrl     String
+  fileSize    Int?
+  mimeType    String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  type        String   // "general", "urgent", "training", "policy", "maintenance"
+  priority    String   @default("medium") // "low", "medium", "high", "critical"
+  status      String   @default("active") // "active", "expired", "cancelled"
+  scheduledAt DateTime?
+  expiresAt   DateTime?
+  attachments String?  // JSON array of file URLs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  announcementReads AnnouncementRead[]
+}
+
+model AnnouncementRead {
+  id            String   @id @default(cuid())
+  readAt        DateTime @default(now())
+  
+  // Relations
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  
+  guardId       String
+  guard         Guard    @relation(fields: [guardId], references: [id])
+  
+  @@unique([announcementId, guardId])
+}
+
+model HealthRecord {
+  id          String   @id @default(cuid())
+  type        String   // "vital_signs", "injury", "illness", "fatigue", "stress", "other"
+  description String
+  severity    String   @default("low") // "low", "medium", "high", "critical"
+  status      String   @default("reported") // "reported", "investigating", "resolved", "closed"
+  reportedAt  DateTime @default(now())
+  resolvedAt  DateTime?
+  resolution  String?
+  actionTaken String?
+  vitals      String?  // JSON object with vital signs data
+  symptoms    String?  // JSON array of symptoms
+  treatment   String?  // JSON array of treatments provided
+  followUpRequired Boolean @default(false)
+  followUpDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  healthReports HealthReport[]
+}
+
+model HealthReport {
+  id          String   @id @default(cuid())
+  reportType  String   // "initial", "follow_up", "medical_review", "final"
+  content     String
+  attachments String?  // JSON array of file URLs
+  reportedBy  String   // Name of the person reporting
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  healthRecordId String
+  healthRecord   HealthRecord @relation(fields: [healthRecordId], references: [id], onDelete: Cascade)
+}
+
+model SafetyCheck {
+  id          String   @id @default(cuid())
+  type        String   // "pre_shift", "post_shift", "equipment", "environmental", "emergency"
+  status      String   @default("pending") // "pending", "passed", "failed", "requires_attention"
+  score       Float?   // Overall safety score
+  issues      String?  // JSON array of identified issues
+  recommendations String? // JSON array of recommendations
+  checkedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  shiftId     String?
+  shift       Shift?   @relation(fields: [shiftId], references: [id])
+  
+  postId      String?
+  post        Post?    @relation(fields: [postId], references: [id])
+}
+
+model WellnessCheck {
+  id          String   @id @default(cuid())
+  mood        String   // "excellent", "good", "fair", "poor", "critical"
+  energy      String   // "high", "medium", "low", "exhausted"
+  stress      String   // "low", "moderate", "high", "severe"
+  sleep       String   // "excellent", "good", "fair", "poor"
+  notes       String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   // "super_admin", "admin", "field_officer", "guard", "viewer"
+  description String?
+  permissions String?  // JSON array of permissions
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  userRoles   UserRole[]
+  rolePermissions RolePermission[]
+  
+  @@unique([name, tenantId])
+}
+
+model UserRole {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, roleId])
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   // "guards.read", "guards.create", "incidents.manage", etc.
+  description String?
+  category    String   // "guards", "incidents", "reports", "system"
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userPermissions UserPermission[]
+  rolePermissions RolePermission[]
+  
+  @@unique([name])
+}
+
+model UserPermission {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  permissionId String
+  permission  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, permissionId])
+}
+
+model RolePermission {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  permissionId String
+  permission  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@unique([roleId, permissionId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // "create", "update", "delete", "login", "logout"
+  entityType  String   // "user", "guard", "incident", "tenant", etc.
+  entityId    String?
+  changes     String?  // JSON object with before/after values
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String
+  value       String
+  description String?
+  category    String   // "general", "security", "notifications", "integrations"
+  isSystem    Boolean  @default(false) // System settings cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenantId    String?
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([key, tenantId])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "guards", "attendance", "incidents", "performance", "custom"
+  description String?
+  config      String   // JSON object with report configuration
+  schedule    String?  // JSON object with schedule configuration
+  format      String   @default("pdf") // "pdf", "excel", "csv"
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  
+  reportRuns  ReportRun[]
+}
+
+model ReportRun {
+  id          String   @id @default(cuid())
+  status      String   @default("pending") // "pending", "running", "completed", "failed"
+  filePath    String?
+  fileSize    Int?
+  error       String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  // Relations
+  reportId    String
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+// PSARA-Specific Models
+model PSARALicense {
+  id              String   @id @default(cuid())
+  licenseNumber   String
+  state           String
+  licenseType     String   // "agency", "individual"
+  issuedDate      DateTime
+  expiryDate      DateTime
+  status          String   @default("active") // "active", "expired", "suspended", "cancelled"
+  renewalReminder Int      @default(30) // days before expiry
+  documentUrl     String?
+  authority       String   // Issuing authority
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([licenseNumber, state, tenantId])
+}
+
+model PSARATraining {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  trainingType  String   // "basic", "refresher", "specialized", "weapons", "first_aid"
+  duration      Int      // in hours
+  validFor      Int      // validity in months
+  provider      String   // Training provider name
+  certificate   String?  // Certificate template or reference
+  status        String   @default("active") // "active", "inactive"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  
+  trainingRecords PSARATrainingRecord[]
+}
+
+model PSARATrainingRecord {
+  id              String   @id @default(cuid())
+  completionDate  DateTime
+  expiryDate      DateTime
+  score           Float?   // Training score if applicable
+  certificateUrl  String?
+  status          String   @default("completed") // "completed", "failed", "in_progress"
+  instructor      String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  guardId         String
+  guard           Guard    @relation(fields: [guardId], references: [id])
+  
+  trainingId      String
+  training        PSARATraining @relation(fields: [trainingId], references: [id])
+  
+  @@unique([guardId, trainingId])
+}
+
+model PSARADutyRegister {
+  id          String   @id @default(cuid())
+  date        DateTime // Duty date
+  shiftType   String   // "day", "night", "split"
+  startTime   DateTime
+  endTime     DateTime
+  location    String
+  dutyType    String   // "static", "patrol", "escort", "event"
+  supervisor  String?  // Supervisor name
+  remarks     String?
+  status      String   @default("scheduled") // "scheduled", "completed", "absent", "late"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  guardId     String
+  guard       Guard    @relation(fields: [guardId], references: [id])
+  
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id])
+  
+  @@unique([guardId, date, shiftType])
+}
+
+model PSARAWageRegister {
+  id            String   @id @default(cuid())
+  month         String   // "2024-01"
+  year          Int
+  basicWages    Float
+  overtimeHours Int      @default(0)
+  overtimeWages Float    @default(0)
+  deductions    Float    @default(0)
+  netWages      Float
+  paymentDate   DateTime?
+  paymentMode   String   // "cash", "bank_transfer", "cheque"
+  utrNumber     String?  // UTR for bank transfers
+  status        String   @default("pending") // "pending", "paid", "processed"
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  guardId       String
+  guard         Guard    @relation(fields: [guardId], references: [id])
+  
+  @@unique([guardId, month, year])
+}
+
+model PSARAClientAgreement {
+  id                String   @id @default(cuid())
+  agreementNumber   String
+  clientName        String
+  clientAddress     String?
+  clientContact     String?
+  startDate         DateTime
+  endDate           DateTime
+  agreementType     String   // "service", "manpower", "equipment"
+  services          String   // JSON array of services provided
+  terms             String?  // Terms and conditions
+  value             Float?   // Contract value
+  renewalReminder   Int      @default(30) // days before expiry
+  status            String   @default("active") // "active", "expired", "terminated", "pending"
+  documentUrl       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([agreementNumber, tenantId])
+}
+
+model PSARAComplianceReport {
+  id                String   @id @default(cuid())
+  reportType        String   // "monthly", "quarterly", "annual", "audit"
+  period            String   // "2024-01", "Q1-2024", "2024"
+  generatedAt       DateTime @default(now())
+  generatedBy       String   // User who generated the report
+  data              String   // JSON string containing report data
+  status            String   @default("generated") // "generated", "submitted", "approved", "rejected"
+  submissionDate    DateTime?
+  approvalDate      DateTime?
+  remarks           String?
+  filePath          String?  // Path to generated PDF file
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  
+  @@unique([reportType, period, tenantId])
+}
+
+// Country-specific content models
+model CountryContent {
+  id          String   @id @default(cuid())
+  country     String   // Country code: "US", "IN", "UK", etc.
+  contentType String   // "pricing", "features", "regulations", "compliance", "documents"
+  title       String?
+  description String?
+  content     String   // JSON content
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  metadata    String?  // Additional metadata as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  
+  @@unique([country, contentType, tenantId])
+}
+
+model CountryPricing {
+  id          String   @id @default(cuid())
+  country     String   // Country code
+  planName    String   // "starter", "professional", "business", "enterprise"
+  price       Float    // Price in local currency
+  currency    String   // "USD", "INR", "GBP", etc.
+  guardLimit  Int      // Number of guards allowed
+  features    String   // JSON array of features
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  metadata    String?  // Additional metadata as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([country, planName])
+}
+
+model CountryRegulation {
+  id          String   @id @default(cuid())
+  country     String   // Country code
+  region      String?  // State, province, or region
+  authority   String   // Regulatory authority name
+  regulation  String   // Type of regulation: "licensing", "training", "background_check", etc.
+  requirements String   // JSON array of requirements
+  documents   String   // JSON array of required documents
+  validity    Int?     // Validity period in months
+  isActive    Boolean  @default(true)
+  metadata    String?  // Additional metadata as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([country, region, regulation])
+}
