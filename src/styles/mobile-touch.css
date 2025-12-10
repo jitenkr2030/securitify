@@ -1,0 +1,299 @@
+/* Mobile Touch Optimizations */
+
+/* Touch target sizes - minimum 44px for iOS HIG and 48px for Material Design */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Larger touch targets for better accessibility */
+.touch-target-lg {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* Extra large touch targets for critical actions */
+.touch-target-xl {
+  min-height: 56px;
+  min-width: 56px;
+}
+
+/* Interactive elements with proper touch targets */
+button, 
+input[type="button"], 
+input[type="submit"], 
+input[type="reset"],
+.button,
+.btn,
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 16px;
+  touch-action: manipulation;
+}
+
+/* Checkbox and radio button touch targets */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 24px;
+  height: 24px;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 10px;
+}
+
+/* Link touch targets */
+a {
+  display: inline-block;
+  padding: 8px 12px;
+  margin: -8px -12px;
+  text-decoration: none;
+}
+
+/* Navigation links */
+nav a,
+.nav-link {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+/* Card touch targets */
+.card-touch-target {
+  min-height: 44px;
+  padding: 12px;
+  margin: -12px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.card-touch-target:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* List item touch targets */
+.list-item-touch {
+  min-height: 44px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.list-item-touch:last-child {
+  border-bottom: none;
+}
+
+/* Gesture support */
+.gesture-area {
+  touch-action: pan-y pinch-zoom;
+}
+
+.gesture-area-x {
+  touch-action: pan-x pinch-zoom;
+}
+
+.gesture-area-xy {
+  touch-action: none;
+}
+
+/* Swipeable cards */
+.swipeable-card {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.3s ease;
+}
+
+.swipeable-card.swiping {
+  transition: none;
+}
+
+/* Pull-to-refresh indicator */
+.pull-to-refresh {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 14px;
+  transform: translateY(-60px);
+  transition: transform 0.3s ease;
+}
+
+.pull-to-refresh.pulling {
+  transform: translateY(0);
+}
+
+/* Infinite scroll loading indicator */
+.infinite-scroll-loading {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Touch feedback */
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.touch-feedback:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Ripple effect */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple-animation 0.6s ease-out;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Mobile-specific optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .hover\:bg-gray-100:hover {
+    background-color: transparent;
+  }
+  
+  .hover\:bg-blue-50:hover {
+    background-color: transparent;
+  }
+  
+  /* Replace hover with active states */
+  .touch-active:bg-gray-100:active {
+    background-color: #f3f4f6;
+  }
+  
+  .touch-active:bg-blue-50:active {
+    background-color: #eff6ff;
+  }
+  
+  /* Larger interactive areas */
+  .interactive-area {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  /* Better spacing for touch */
+  .touch-spacing {
+    margin: 8px 0;
+  }
+  
+  /* Improved form controls */
+  input, 
+  select, 
+  textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    min-height: 44px;
+  }
+  
+  /* Better select dropdowns */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+}
+
+/* Safe area insets for modern devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Full viewport height on mobile */
+.mobile-full-height {
+  height: 100vh;
+  height: -webkit-fill-available;
+  min-height: -webkit-fill-available;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth scrolling for touch devices */
+@media (hover: none) and (pointer: coarse) {
+  html {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Better scrolling containers */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+  }
+  
+  .scroll-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scroll-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  
+  .scroll-container::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 3px;
+  }
+}
