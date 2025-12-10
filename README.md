@@ -1,4 +1,4 @@
-# SecurityGuard Pro
+# Securitify
 
 A comprehensive security guard management system built with modern web technologies, featuring real-time location tracking, attendance management, geofencing, alert systems, and multi-tenant support.
 
