@@ -273,4 +273,4 @@ For support and questions:
 
 ---
 
-**SecurityGuard Pro** - Modern security management for the digital age.
+**Securitify** - Modern security management for the digital age.
