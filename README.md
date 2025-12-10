@@ -81,7 +81,7 @@ A comprehensive security guard management system built with modern web technolog
    DATABASE_URL="file:./dev.db"
 
    # Authentication
-   NEXTAUTH_SECRET=your-secret-key
+   NEXTAUTH_SECRET=your-secret-key-here
    NEXTAUTH_URL=http://localhost:3000
 
    # Email
@@ -119,7 +119,7 @@ A comprehensive security guard management system built with modern web technolog
 
 ### Production Setup
 
-See the [Administrator Guide](docs/admin/README.md) for detailed production deployment instructions including:
+See the [Administrator Guide](docs/deployment/README.md) for detailed production deployment instructions including:
 - Server preparation
 - Database configuration
 - Docker deployment
@@ -129,7 +129,7 @@ See the [Administrator Guide](docs/admin/README.md) for detailed production depl
 ## 📱 Usage
 
 ### For Users
-Refer to the [User Guide](docs/user/README.md) for comprehensive documentation on:
+Refer to the [User Guide](docs/guides/README.md) for comprehensive documentation on:
 - Getting started with the platform
 - Dashboard navigation
 - Guard management
@@ -139,7 +139,7 @@ Refer to the [User Guide](docs/user/README.md) for comprehensive documentation o
 - Mobile app usage
 
 ### For Administrators
-Refer to the [Administrator Guide](docs/admin/README.md) for:
+Refer to the [Administrator Guide](docs/deployment/README.md) for:
 - System installation and setup
 - User and tenant management
 - System configuration
@@ -155,6 +155,19 @@ Refer to the [API Documentation](docs/api/README.md) for:
 - Webhook information
 - SDK usage examples
 - Best practices
+
+## 📁 Project Organization
+
+The project follows a well-organized structure for maintainability and scalability:
+
+- **`/src/`** - Source code with feature-based organization
+- **`/docs/`** - Comprehensive documentation (API, deployment, guides)
+- **`/scripts/`** - Utility scripts and server configurations
+- **`/tests/`** - Test files and configuration
+- **`/assets/`** - Static assets (images, icons)
+- **`/database/`** - Database files and migrations
+
+For detailed project structure information, see [Project Structure Documentation](docs/development/PROJECT_STRUCTURE.md).
 
 ## 🔧 Configuration
 

@@ -3,9 +3,9 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx 2>&1 | tee dev.log",
+    "dev": "nodemon --exec \"npx tsx scripts/server.ts\" --watch scripts/server.ts --watch src --ext ts,tsx,js,jsx 2>&1 | tee logs/dev.log",
     "build": "node scripts/vercel-setup.js && prisma generate && next build",
-    "start": "NODE_ENV=production tsx server.ts 2>&1 | tee server.log",
+    "start": "NODE_ENV=production tsx scripts/server.ts 2>&1 | tee logs/server.log",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -14,7 +14,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "vercel-build": "node scripts/vercel-setup.js && prisma generate && next build"
   },
   "dependencies": {
@@ -73,7 +73,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.525.0",
     "multer": "^2.0.2",
-    "next": "15.3.5",
+    "next": "^15.3.6",
     "next-auth": "^4.24.11",
     "next-intl": "^4.3.4",
     "next-themes": "^0.4.6",
@@ -112,7 +112,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5",
+    "eslint-config-next": "^15.3.6",
     "jest": "^30.1.3",
     "jest-environment-jsdom": "^30.1.2",
     "nodemon": "^3.1.10",
