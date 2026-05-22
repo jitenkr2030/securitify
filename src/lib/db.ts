@@ -1,20 +1,8 @@
+import './env-setup'; // MUST be first - sets DATABASE_URL before Prisma loads
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
-}
-
-// Resolve database URL with Neon integration fallback
-function getDatabaseUrl(): string {
-  const url =
-    process.env.DATABASE_URL ||
-    process.env.storage_POSTGRES_URL ||
-    process.env.POSTGRES_URL ||
-    ""
-  if (!url) {
-    console.error('❌ No database URL found. Checked: DATABASE_URL, storage_POSTGRES_URL, POSTGRES_URL')
-  }
-  return url
 }
 
 // Create Prisma client with production-ready configuration
@@ -23,7 +11,7 @@ export const db =
   new PrismaClient({
     datasources: {
       db: {
-        url: getDatabaseUrl(),
+        url: process.env.DATABASE_URL,
       },
     },
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
