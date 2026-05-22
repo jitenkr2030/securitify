@@ -4,22 +4,36 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Resolve database URL with Neon integration fallback
+function getDatabaseUrl(): string {
+  const url =
+    process.env.DATABASE_URL ||
+    process.env.storage_POSTGRES_URL ||
+    process.env.POSTGRES_URL ||
+    ""
+  if (!url) {
+    console.error('❌ No database URL found. Checked: DATABASE_URL, storage_POSTGRES_URL, POSTGRES_URL')
+  }
+  return url
+}
+
 // Create Prisma client with production-ready configuration
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
+      },
+    },
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     errorFormat: 'minimal',
   })
 
 // Configure connection pool for production
 if (process.env.NODE_ENV === 'production') {
-  // Use connection pooling for better performance
   const poolMin = parseInt(process.env.DB_POOL_MIN || '2')
   const poolMax = parseInt(process.env.DB_POOL_MAX || '10')
-  
-  // This would be configured in the DATABASE_URL for production
-  // Example: file:./dev.db?connection_limit=10
 }
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
@@ -27,23 +41,18 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 // Initialize database with demo data if needed
 export async function initializeDatabase() {
   try {
-    // Test database connection
     await db.$queryRaw`SELECT 1`
     console.log('✅ Database connection successful')
-    
-    // Check if we need to create demo data
+
     const demoTenant = await db.tenant.findFirst({
       where: { subdomain: 'demo' }
     })
-    
+
     if (!demoTenant && process.env.NODE_ENV === 'development') {
       console.log('📝 Creating demo tenant and users...')
-      // Demo data creation logic can be added here
     }
   } catch (error) {
     console.error('❌ Database connection failed:', error)
-    // In production, we might want to throw an error here
-    // For development, we'll continue and let individual queries handle the error
   }
 }
 
@@ -55,7 +64,6 @@ export class TenantDB {
     this.tenantId = tenantId;
   }
 
-  // User operations
   async user(args: any = {}) {
     return db.user.findMany({
       ...args,
@@ -106,7 +114,6 @@ export class TenantDB {
     });
   }
 
-  // Guard operations
   async guard(args: any = {}) {
     const whereClause = {
       ...args.where,
@@ -114,7 +121,6 @@ export class TenantDB {
         tenantId: this.tenantId
       }
     };
-
     return db.guard.findMany({
       ...args,
       where: whereClause
@@ -134,14 +140,11 @@ export class TenantDB {
   }
 
   async createGuard(args: any) {
-    // Check tenant limits first
     const { TenantService } = await import('@/lib/tenant');
     const limits = await TenantService.checkTenantLimits(this.tenantId);
-    
     if (!limits.canAddGuards) {
       throw new Error(`Guard limit reached. Current: ${limits.currentGuards}, Limit: ${limits.guardLimit}`);
     }
-
     return db.guard.create({
       ...args,
       data: {
@@ -156,7 +159,6 @@ export class TenantDB {
     });
   }
 
-  // Count operations
   async guardCount(args: any = {}) {
     const whereClause = {
       ...args.where,
@@ -164,7 +166,6 @@ export class TenantDB {
         tenantId: this.tenantId
       }
     };
-
     return db.guard.count({
       ...args,
       where: whereClause
@@ -231,7 +232,6 @@ export class TenantDB {
     });
   }
 
-  // Post operations
   async post(args: any = {}) {
     return db.post.findMany({
       ...args,
@@ -257,14 +257,11 @@ export class TenantDB {
   }
 
   async createPost(args: any) {
-    // Check tenant limits first
     const { TenantService } = await import('@/lib/tenant');
     const limits = await TenantService.checkTenantLimits(this.tenantId);
-    
     if (!limits.canAddPosts) {
       throw new Error(`Post limit reached. Current: ${limits.currentPosts}, Limit: ${limits.postLimit}`);
     }
-
     return db.post.create({
       ...args,
       data: {
@@ -279,7 +276,6 @@ export class TenantDB {
     });
   }
 
-  // Shift operations
   async shift(args: any = {}) {
     return db.shift.findMany({
       ...args,
@@ -304,7 +300,6 @@ export class TenantDB {
     });
   }
 
-  // Attendance operations
   async attendance(args: any = {}) {
     return db.attendance.findMany({
       ...args,
@@ -317,7 +312,6 @@ export class TenantDB {
     });
   }
 
-  // Leave operations
   async leave(args: any = {}) {
     return db.leave.findMany({
       ...args,
@@ -330,7 +324,6 @@ export class TenantDB {
     });
   }
 
-  // Salary operations
   async salary(args: any = {}) {
     return db.salary.findMany({
       ...args,
@@ -343,7 +336,6 @@ export class TenantDB {
     });
   }
 
-  // Document operations
   async document(args: any = {}) {
     return db.document.findMany({
       ...args,
@@ -356,7 +348,6 @@ export class TenantDB {
     });
   }
 
-  // Location operations
   async location(args: any = {}) {
     return db.location.findMany({
       ...args,
@@ -369,7 +360,6 @@ export class TenantDB {
     });
   }
 
-  // Alert operations
   async alert(args: any = {}) {
     return db.alert.findMany({
       ...args,
@@ -382,7 +372,6 @@ export class TenantDB {
     });
   }
 
-  // Notification operations
   async notification(args: any = {}) {
     return db.notification.findMany({
       ...args,
@@ -406,7 +395,6 @@ export class TenantDB {
     });
   }
 
-  // Incident operations
   async incident(args: any = {}) {
     return db.incident.findMany({
       ...args,
@@ -470,7 +458,6 @@ export class TenantDB {
     });
   }
 
-  // Message operations
   async message(args: any = {}) {
     return db.message.findMany({
       ...args,
@@ -576,7 +563,6 @@ export class TenantDB {
     });
   }
 
-  // Permission operations
   async permission(args: any = {}) {
     return db.permission.findMany({
       ...args,
@@ -660,7 +646,6 @@ export class TenantDB {
     });
   }
 
-  // Role operations
   async role(args: any = {}) {
     return db.role.findMany({
       ...args,
@@ -721,7 +706,6 @@ export class TenantDB {
     });
   }
 
-  // RolePermission operations
   async rolePermission(args: any = {}) {
     return db.rolePermission.findMany({
       ...args,
@@ -749,7 +733,6 @@ export class TenantDB {
     });
   }
 
-  // SafetyCheck operations
   async safetyCheck(args: any = {}) {
     return db.safetyCheck.findMany({
       ...args,
@@ -823,7 +806,6 @@ export class TenantDB {
     });
   }
 
-  // WellnessCheck operations
   async wellnessCheck(args: any = {}) {
     return db.wellnessCheck.findMany({
       ...args,
@@ -897,7 +879,6 @@ export class TenantDB {
     });
   }
 
-  // Get tenant information
   async getTenant() {
     return db.tenant.findUnique({
       where: { id: this.tenantId },
@@ -912,7 +893,6 @@ export class TenantDB {
     });
   }
 
-  // Announcement operations
   async announcement(args: any = {}) {
     return db.announcement.findMany({
       ...args,
@@ -933,19 +913,16 @@ export class TenantDB {
     });
   }
 
-  // Get tenant settings
   async getSettings() {
     const settings = await db.tenantSetting.findMany({
       where: { tenantId: this.tenantId }
     });
-
     return settings.reduce((acc, setting) => {
       acc[setting.key] = setting.value;
       return acc;
     }, {} as Record<string, string>);
   }
 
-  // IncidentReport operations
   async incidentReport(args: any = {}) {
     return db.incidentReport.findMany({
       ...args,
@@ -1015,5 +992,3 @@ export function createTenantContext(tenantId: string): TenantDB {
 export function getTenantIdFromRequest(request: Request): string | null {
   return request.headers.get('x-tenant-id');
 }
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
