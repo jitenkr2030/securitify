@@ -1,22 +1,20 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import * as bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 export async function POST() {
   try {
     console.log('🔧 Creating demo users...');
 
     // Find or create demo tenant
-    let demoTenant = await prisma.tenant.findFirst({
+    let demoTenant = await db.tenant.findFirst({
       where: {
         subdomain: 'demo'
       }
     });
 
     if (!demoTenant) {
-      demoTenant = await prisma.tenant.create({
+      demoTenant = await db.tenant.create({
         data: {
           name: 'Demo Security Company',
           subdomain: 'demo',
@@ -27,7 +25,7 @@ export async function POST() {
       console.log('✅ Created demo tenant:', demoTenant.name);
 
       // Create tenant settings
-      await prisma.tenantSetting.createMany({
+      await db.tenantSetting.createMany({
         data: [
           { tenantId: demoTenant.id, key: 'timezone', value: 'UTC' },
           { tenantId: demoTenant.id, key: 'currency', value: 'USD' },
@@ -39,7 +37,7 @@ export async function POST() {
       });
 
       // Create subscription
-      await prisma.subscription.create({
+      await db.subscription.create({
         data: {
           tenantId: demoTenant.id,
           plan: 'professional',
@@ -54,7 +52,7 @@ export async function POST() {
     const hashedPassword = await bcrypt.hash('password123', 12);
 
     // Create admin user
-    const adminUser = await prisma.user.upsert({
+    const adminUser = await db.user.upsert({
       where: {
         email_tenantId: {
           email: 'admin@security.com',
@@ -72,7 +70,7 @@ export async function POST() {
     });
 
     // Create guard user
-    const guardUser = await prisma.user.upsert({
+    const guardUser = await db.user.upsert({
       where: {
         email_tenantId: {
           email: 'guard@security.com',
@@ -90,7 +88,7 @@ export async function POST() {
     });
 
     // Create field officer user
-    const officerUser = await prisma.user.upsert({
+    const officerUser = await db.user.upsert({
       where: {
         email_tenantId: {
           email: 'officer@security.com',
@@ -108,7 +106,7 @@ export async function POST() {
     });
 
     // Create guard profile for the guard user
-    await prisma.guard.upsert({
+    await db.guard.upsert({
       where: {
         phone_userId: {
           phone: '+91 12345 67890',
@@ -146,7 +144,5 @@ export async function POST() {
       { error: 'Failed to create demo users' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

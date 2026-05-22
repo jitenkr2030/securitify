@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import { productionConfig } from '@/lib/production-config';
-
-const prisma = new PrismaClient();
 
 export async function GET() {
   try {
@@ -16,15 +14,15 @@ export async function GET() {
 
     // Database check
     try {
-      const demoTenant = await prisma.tenant.findFirst({
+      const demoTenant = await db.tenant.findFirst({
         where: { subdomain: 'demo' }
       });
-      
+
       if (demoTenant) {
-        const userCount = await prisma.user.count({
+        const userCount = await db.user.count({
           where: { tenantId: demoTenant.id }
         });
-        
+
         health.checks.database = {
           status: 'healthy',
           demoTenant: {
@@ -49,7 +47,7 @@ export async function GET() {
 
     // Authentication check
     try {
-      const demoUser = await prisma.user.findFirst({
+      const demoUser = await db.user.findFirst({
         where: {
           email: 'admin@security.com',
           tenant: {
@@ -57,7 +55,7 @@ export async function GET() {
           }
         }
       });
-      
+
       if (demoUser && demoUser.password) {
         health.checks.authentication = {
           status: 'healthy',
@@ -87,9 +85,9 @@ export async function GET() {
       'NEXT_PUBLIC_APP_URL',
       'DATABASE_URL'
     ];
-    
+
     const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
-    
+
     if (missingEnvVars.length === 0) {
       health.checks.configuration = {
         status: 'healthy',
@@ -114,7 +112,7 @@ export async function GET() {
           max: productionConfig.security.rateLimit.max,
           productionReady: process.env.NODE_ENV !== 'production'
         },
-        warning: process.env.NODE_ENV === 'production' 
+        warning: process.env.NODE_ENV === 'production'
           ? 'Using in-memory rate limiting in production. Consider Redis for production deployment.'
           : undefined
       };
@@ -143,7 +141,7 @@ export async function GET() {
     }
 
     // Set appropriate HTTP status
-    const statusCode = health.status === 'healthy' ? 200 : 
+    const statusCode = health.status === 'healthy' ? 200 :
                        health.status === 'degraded' ? 200 : 503;
 
     return NextResponse.json(health, { status: statusCode });
@@ -158,7 +156,5 @@ export async function GET() {
       },
       { status: 503 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
